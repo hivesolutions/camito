@@ -34,7 +34,8 @@ __copyright__ = "Copyright (c) 2008-2014 Hive Solutions Lda."
 __license__ = "GNU General Public License (GPL), Version 3"
 """ The license for the module """
 
-import cv2
+try: import cv2
+except: cv2 = None
 
 class Analysis(object):
 
@@ -111,5 +112,6 @@ class Analysis(object):
         cv2.destroyWindow(self.win_delta)
 
 if __name__ == "__main__":
+    if not cv2: return
     analysis = Analysis()
     analysis.start()

@@ -35,5 +35,7 @@ __license__ = "GNU General Public License (GPL), Version 3"
 """ The license for the module """
 
 from . import net
+from . import util
 
 from .net import *
+from .util import *
