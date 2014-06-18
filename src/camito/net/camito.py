@@ -40,6 +40,28 @@ __license__ = "GNU General Public License (GPL), Version 3"
 import netius.clients
 import netius.servers
 
+class FrameBuffer(list):
+
+    def __init__(self, max = 60, *args, **kwargs):
+        list.__init__(self, *args, **kwargs)
+        self.max = max
+        self.index = -1
+        for _index in range(self.max): self.append(None)
+
+    def peek_frame(self):
+        if self.index == -1: return None
+        return self[self.index]
+
+    def put_frame(self, data):
+        self.next()
+        self[self.index] = data
+
+    def next(self):
+        is_limit = self.index == self.max - 1
+        if is_limit: self.index = 0
+        else: self.index += 1
+        return self.index
+
 class CamitoServer(netius.servers.MJPGServer):
 
     def __init__(self, *args, **kwargs):
@@ -124,7 +146,7 @@ class CamitoServer(netius.servers.MJPGServer):
         camera = camera[0]
         frames = self.frames.get(camera, None)
         if not frames: return None
-        return frames[-1]
+        return frames.peek_frame()
 
     def _on_prx_frame(self, client, parser, data):
         connection = parser.owner
@@ -154,9 +176,9 @@ class CamitoServer(netius.servers.MJPGServer):
         if not info: return
 
         name, _url = info
-        sequence = self.frames.get(name, [])
-        sequence.append(data)
-        self.frames[name] = sequence
+        buffer = self.frames.get(name, FrameBuffer())
+        buffer.put_frame(data)
+        self.frames[name] = buffer
 
 if __name__ == "__main__":
     server = CamitoServer()
