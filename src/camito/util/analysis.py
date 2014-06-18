@@ -86,6 +86,10 @@ class Analysis(object):
         return True
 
     def start(self):
+        # in case the cv library is not available must return
+        # immediately in order to avoid any problems (required)
+        if not cv2: return
+
         # retrieves the reference to the first video device
         # present in the current system, this is going to be
         # used for the capture of the image and delta calculus
@@ -112,6 +116,5 @@ class Analysis(object):
         cv2.destroyWindow(self.win_delta)
 
 if __name__ == "__main__":
-    if not cv2: return
     analysis = Analysis()
     analysis.start()
