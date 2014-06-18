@@ -140,9 +140,17 @@ class FrameBuffer(list):
         return image
 
 class CamitoServer(netius.servers.MJPGServer):
+    """
+    Main class for the camito server responsible for the serving
+    of proxy based mjpeg streams through a pipeline of changes
+    that should be cached for performance.
+    """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, resources = (), *args, **kwargs):
         netius.servers.MJPGServer.__init__(self, *args, **kwargs)
+        self.resources = resources
+        self.cameras = dict()
+        self.frames = dict()
         self.client = netius.clients.MJPGClient(
             thread = False,
             auto_release = False
@@ -154,9 +162,6 @@ class CamitoServer(netius.servers.MJPGServer):
         self.container = netius.Container(*args, **kwargs)
         self.container.add_base(self)
         self.container.add_base(self.client)
-
-        self.cameras = dict()
-        self.frames = dict()
 
     def start(self):
         self._boot()
@@ -187,16 +192,24 @@ class CamitoServer(netius.servers.MJPGServer):
 
     def get_image(self, connection):
         params = connection.params
-        camera = params.get("camera", ["af1"])[0]
+        first = self.resources[0][0]
+        camera = params.get("camera", [first])[0]
         resolution = params.get("resolution", [None])[0]
+        quality = params.get("quality", ["60"])[0]
         frames = self.frames.get(camera, None)
         if not frames: return None
+        if resolution:
+            width, height = resolution.split("x", 1)
+            size = (int(width), int(height))
+        else: size = None
+        quality = int(quality)
         frame = frames.peek_frame()
-        frame = self.frames.transcode(
+        frame = frames.transcode(
             frame,
-            size = (120, 120),
-            quality = 20
+            size = size,
+            quality = quality
         )
+        print(len(frame))
         return frame
 
     def _on_prx_frame(self, client, parser, data):
@@ -210,11 +223,6 @@ class CamitoServer(netius.servers.MJPGServer):
         pass
 
     def _boot(self):
-        #@todo: comment and structure this
-        self.resources = (
-            ("cascam", "http://cascam.ou.edu/axis-cgi/mjpg/video.cgi?resolution=320x240"),
-            ("af1", "http://root:hbw7qYoZ@lugardajoiafa.dyndns.org:7000/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480&compression=30&fps=4&clock=None")
-        )
         for info in self.resources:
             name, url = info
             connection = self.client.get(url)
@@ -232,5 +240,9 @@ class CamitoServer(netius.servers.MJPGServer):
         self.frames[name] = buffer
 
 if __name__ == "__main__":
-    server = CamitoServer()
+    server = CamitoServer(
+        resources = (
+            ("cascam", "http://cascam.ou.edu/axis-cgi/mjpg/video.cgi"),
+        )
+    )
     server.serve(env = True)
