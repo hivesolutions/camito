@@ -54,8 +54,27 @@ class CamitoServer(netius.servers.MJPGServer):
         self.container.add_base(self.http_client)
         self.container.add_base(self.raw_client)
 
+    def start(self):
+        # starts the container this should trigger the start of the
+        # event loop in the container and the proper listening of all
+        # the connections in the current environment
+        self.container.start(self)
+
+    def stop(self):
+        # verifies if there's a container object currently defined in
+        # the object and in case it does exist propagates the stop call
+        # to the container so that the proper stop operation is performed
+        if not self.container: return
+        self.container.stop()
+
+    def cleanup(self):
+        netius.servers.MJPGServer.cleanup(self)
+        self.container = None
+        self.client.destroy()
+
     def _on_prx_frame(self, client, _connection, data):
         print(data)
+
         #@todo tenho de arquivar em buffer este novo frame
 
     def _on_prx_close(self, client, _connection):
