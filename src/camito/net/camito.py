@@ -190,6 +190,13 @@ class CamitoServer(netius.servers.MJPGServer):
         params = parser._parse_query(query)
         connection.params = params
 
+    def get_delay(self, connection):
+        params = connection.params
+        fps = params.get("fps", ["1"])[0]
+        fps = int(fps)
+        delay = 1.0 / fps
+        return delay
+
     def get_image(self, connection):
         params = connection.params
         first = self.resources[0][0]
@@ -243,6 +250,7 @@ if __name__ == "__main__":
     server = CamitoServer(
         resources = (
             ("cascam", "http://cascam.ou.edu/axis-cgi/mjpg/video.cgi"),
+            ("iris", "http://iris.not.iac.es/axis-cgi/mjpg/video.cgi")
         )
     )
     server.serve(env = True)
