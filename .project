@@ -3,6 +3,7 @@
 	<name>camito</name>
 	<comment></comment>
 	<projects>
+		<project>netius</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

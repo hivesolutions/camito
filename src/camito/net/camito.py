@@ -44,17 +44,24 @@ class CamitoServer(netius.servers.MJPGServer):
 
     def __init__(self, *args, **kwargs):
         netius.servers.MJPGServer.__init__(self, *args, **kwargs)
-        self.client = netius.clients.MJPGClient()
+        self.client = netius.clients.MJPGClient(
+            thread = False,
+            auto_release = False
+        )
         self.client.bind("frame", self._on_prx_frame)
         self.client.bind("close", self._on_prx_close)
         self.client.bind("error", self._on_prx_error)
 
         self.container = netius.Container(*args, **kwargs)
         self.container.add_base(self)
-        self.container.add_base(self.http_client)
-        self.container.add_base(self.raw_client)
+        self.container.add_base(self.client)
+
+        self.cameras = dict()
+        self.frames = dict()
 
     def start(self):
+        self._boot()
+
         # starts the container this should trigger the start of the
         # event loop in the container and the proper listening of all
         # the connections in the current environment
@@ -72,10 +79,56 @@ class CamitoServer(netius.servers.MJPGServer):
         self.container = None
         self.client.destroy()
 
-    def _on_prx_frame(self, client, _connection, data):
-        print(data)
+    def decode_params(self, params):
+        """
+        Decodes the complete set of parameters defined in the
+        provided map so that all of keys and values are created
+        as unicode strings instead of utf-8 based strings.
 
-        #@todo tenho de arquivar em buffer este novo frame
+        This method's execution is mandatory on the retrieval of
+        the parameters from the sent data.
+
+        :type params: Dictionary
+        :param params: The map containing the encoded set of values
+        that are going to be decoded from the utf-8 form.
+        :rtype: Dictionary
+        :return: The decoded map meaning that all the keys and values
+        are in the unicode form instead of the string form.
+        """
+
+        # creates the dictionary that will hold the processed/decoded
+        # sequences of parameters created from the provided (and original)
+        # map of encoded parameters (raw values)
+        _params = dict()
+
+        for key, value in params.items():
+            items = []
+            for item in value:
+                is_bytes = netius.is_bytes(item)
+                if is_bytes: item = item.decode("utf-8")
+                items.append(item)
+            is_bytes = netius.is_bytes(key)
+            if is_bytes: key = key.decode("utf-8")
+            _params[key] = items
+
+        return _params
+
+
+
+    def get_image(self, connection):
+        parser = connection.parser
+        query = parser.get_query()
+        params = netius.parse_qs(query, keep_blank_values = True)
+        params = self.decode_params(params)
+        camera = params.get("camera") or ["af1"]
+        camera = camera[0]
+        frames = self.frames.get(camera, None)
+        if not frames: return None
+        return frames[-1]
+
+    def _on_prx_frame(self, client, parser, data):
+        connection = parser.owner
+        self._store_frame(connection, data)
 
     def _on_prx_close(self, client, _connection):
         pass
@@ -83,6 +136,28 @@ class CamitoServer(netius.servers.MJPGServer):
     def _on_prx_error(self, client, _connection):
         pass
 
+    def _boot(self):
+        #@todo: comment and structure this
+        self.resources = (
+            ("cascam", "http://cascam.ou.edu/axis-cgi/mjpg/video.cgi?resolution=320x240"),
+            ("af1", "http://root:hbw7qYoZ@lugardajoiafa.dyndns.org:7000/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480&compression=30&fps=4&clock=None")
+        )
+        for info in self.resources:
+            name, url = info
+            connection = self.client.get(url)
+            self.cameras[name] = connection
+            self.cameras[url] = connection
+            self.cameras[connection] = info
+
+    def _store_frame(self, connection, data):
+        info = self.cameras.get(connection, None)
+        if not info: return
+
+        name, _url = info
+        sequence = self.frames.get(name, [])
+        sequence.append(data)
+        self.frames[name] = sequence
+
 if __name__ == "__main__":
     server = CamitoServer()
-    server.serve()
+    server.serve(env = True)
