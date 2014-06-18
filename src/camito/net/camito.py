@@ -106,47 +106,10 @@ class CamitoServer(netius.servers.MJPGServer):
         self.container = None
         self.client.destroy()
 
-    def decode_params(self, params):
-        """
-        Decodes the complete set of parameters defined in the
-        provided map so that all of keys and values are created
-        as unicode strings instead of utf-8 based strings.
-
-        This method's execution is mandatory on the retrieval of
-        the parameters from the sent data.
-
-        :type params: Dictionary
-        :param params: The map containing the encoded set of values
-        that are going to be decoded from the utf-8 form.
-        :rtype: Dictionary
-        :return: The decoded map meaning that all the keys and values
-        are in the unicode form instead of the string form.
-        """
-
-        # creates the dictionary that will hold the processed/decoded
-        # sequences of parameters created from the provided (and original)
-        # map of encoded parameters (raw values)
-        _params = dict()
-
-        for key, value in params.items():
-            items = []
-            for item in value:
-                is_bytes = netius.is_bytes(item)
-                if is_bytes: item = item.decode("utf-8")
-                items.append(item)
-            is_bytes = netius.is_bytes(key)
-            if is_bytes: key = key.decode("utf-8")
-            _params[key] = items
-
-        return _params
-
-
-
     def get_image(self, connection):
         parser = connection.parser
         query = parser.get_query()
-        params = netius.parse_qs(query, keep_blank_values = True)
-        params = self.decode_params(params)
+        params = parser._parse_query(query)
         camera = params.get("camera") or ["af1"]
         camera = camera[0]
         frames = self.frames.get(camera, None)
