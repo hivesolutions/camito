@@ -216,7 +216,8 @@ class CamitoServer(netius.servers.MJPGServer):
             size = size,
             quality = quality
         )
-        print(len(frame))
+        frame_l = len(frame)
+        self.debug("Serving '%s' frame with %d bytes" % (camera, frame_l))
         return frame
 
     def _on_prx_frame(self, client, parser, data):
