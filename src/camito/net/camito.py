@@ -106,10 +106,15 @@ class CamitoServer(netius.servers.MJPGServer):
         self.container = None
         self.client.destroy()
 
-    def get_image(self, connection):
+    def on_send_mjpg(self, connection):
+        netius.servers.MJPGServer.on_send_mjpg(self, connection)
         parser = connection.parser
         query = parser.get_query()
         params = parser._parse_query(query)
+        connection.params = params
+
+    def get_image(self, connection):
+        params = connection.params
         camera = params.get("camera") or ["af1"]
         camera = camera[0]
         frames = self.frames.get(camera, None)
