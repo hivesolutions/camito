@@ -41,6 +41,11 @@ import netius.clients
 import netius.servers
 
 class FrameBuffer(list):
+    """
+    Buffer class meant to be used in the storage of frames
+    for buffering purposes, should be able to keep cache of
+    a certain amount of frames for latter "peeking".
+    """
 
     def __init__(self, max = 60, *args, **kwargs):
         list.__init__(self, *args, **kwargs)
