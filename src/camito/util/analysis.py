@@ -71,6 +71,8 @@ class Analysis(object):
         status, image = self.camera.read()
         if not status: return False
 
+        # verifies if there's a previous image defined so that
+        # we can calculate the proper delta values between images
         if not self.previous == None: delta = cv2.absdiff(
             cv2.cvtColor(self.previous, cv2.COLOR_RGB2GRAY),
             cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
@@ -82,6 +84,8 @@ class Analysis(object):
         cv2.imshow(self.win_image, image)
         if not delta == None: cv2.imshow(self.win_delta, delta)
 
+        # updates the previous image so that the new image is set
+        # as the "new" previous image (as requested)
         self.previous = image
         return True
 
@@ -112,6 +116,8 @@ class Analysis(object):
             key = cv2.waitKey(10)
             if key == 27: break
 
+        # destroys the currently displayed windows on the screen
+        # so that they can no longer be used in the current screen
         cv2.destroyWindow(self.win_image)
         cv2.destroyWindow(self.win_delta)
 
