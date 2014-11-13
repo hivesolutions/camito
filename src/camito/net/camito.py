@@ -71,8 +71,8 @@ class FrameBuffer(list):
         import PIL.Image
         if not data: return data
 
-        in_buffer = netius.BytesIO(data)
-        out_buffer = netius.BytesIO()
+        in_buffer = netius.legacy.BytesIO(data)
+        out_buffer = netius.legacy.BytesIO()
         try:
             image = PIL.Image.open(in_buffer)
             if size: image = self._resize(image, size)

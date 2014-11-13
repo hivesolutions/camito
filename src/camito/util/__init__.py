@@ -36,4 +36,4 @@ __license__ = "GNU General Public License (GPL), Version 3"
 
 from . import analysis
 
-from .analysis import *
+from .analysis import Analysis
