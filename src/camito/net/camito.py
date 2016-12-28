@@ -255,3 +255,5 @@ if __name__ == "__main__":
         )
     )
     server.serve(env = True)
+else:
+    __path__ = []
